@@ -9,7 +9,7 @@ using System.Text;
 namespace LoanQuotesMOMClient
 {
     class Program
-    {
+    { 
         private List<JObject> _loanProposals;
         static void Main(string[] args)
         {
@@ -18,9 +18,45 @@ namespace LoanQuotesMOMClient
 
         private void Run()
         {
+            bool running = true;
             User user = new User();
             _loanProposals = new List<JObject>();
 
+            ReceiveOffer(user.Id);
+
+            while (running)
+            {
+                Console.Clear();
+                Console.WriteLine("1 - Ask for a loan");
+                Console.WriteLine("2 - View current offers");
+                Console.WriteLine("0 - Exit");
+                Console.WriteLine("Choose an option: ");
+
+                string option = Console.ReadLine();
+
+                switch (option)
+                {
+                    case "1":
+                        AskForLoan(user);
+                        break;
+                    case "2":
+                        ViewCurrentOffers();
+                        break;
+                    case "0":
+                        running = false;
+                        break;
+                    default:
+                        Console.WriteLine("Option not valid.");
+                        Console.ReadKey();
+                        break;
+                }
+                
+            }
+        }
+
+        private void AskForLoan(User user)
+        {
+            Console.Clear();
             Console.WriteLine("What is the amount of loan you need?");
             int requestedMoney = int.Parse(Console.ReadLine());
 
@@ -29,9 +65,11 @@ namespace LoanQuotesMOMClient
             loan.Add("clientId", user.Id.ToString());
 
             CreateRequestQueue(loan.ToString());
-            ReceiveOffer(user.Id);
-            Console.ReadKey();
+        }
 
+        private void ViewCurrentOffers()
+        {
+            Console.Clear();
             foreach (JObject proposal in _loanProposals)
             {
                 Guid bankId = Guid.Parse(proposal["bankId"].Value<string>());
@@ -40,7 +78,10 @@ namespace LoanQuotesMOMClient
                 Console.WriteLine("Bank {0} - {1};", bankId.ToString(), offer);
             }
 
-            Console.ReadKey();
+            Console.WriteLine("\nChoose an offer: ");
+            string offerSelected = Console.ReadLine();
+
+            _loanProposals.Clear();
         }
 
         private void CreateRequestQueue(string message)
@@ -57,8 +98,6 @@ namespace LoanQuotesMOMClient
                                      routingKey: "",
                                      basicProperties: null,
                                      body: body);
-
-                Console.WriteLine(" [x] Requesting loan: {0}", message);
             }
         }
 
@@ -81,7 +120,6 @@ namespace LoanQuotesMOMClient
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                Console.WriteLine("Received offers:");
                 var body = ea.Body;
                 var message = Encoding.UTF8.GetString(body);
                 JObject proposal = JsonConvert.DeserializeObject<JObject>(message);
