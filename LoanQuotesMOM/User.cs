@@ -10,7 +10,7 @@ namespace LoanQuotesMOMClient
 
         public User()
         {
-            Id = new Guid();
+            Id = Guid.NewGuid();
         }
     }
 }
